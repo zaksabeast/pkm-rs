@@ -101,7 +101,11 @@ impl Pkx for Pk8 {
         self.default_read_le(0x8C)
     }
 
-    fn ht_friendship(&self) -> u32 {
+    fn current_handler(&self) -> u8 {
+        self.default_read(0xC4)
+    }
+
+    fn ht_friendship(&self) -> u8 {
         self.default_read(0xC8)
     }
 
@@ -109,7 +113,7 @@ impl Pkx for Pk8 {
         self.default_read::<u8>(0xE2).into()
     }
 
-    fn ot_friendship(&self) -> u32 {
+    fn ot_friendship(&self) -> u8 {
         self.default_read(0x112)
     }
 }
@@ -335,12 +339,30 @@ mod test {
     #[test]
     fn should_read_ot_friendship() {
         let pkx = Pk8::new(TEST_EKX);
-        assert_eq!(pkx.ot_friendship(), 0)
+        assert_eq!(pkx.ot_friendship(), 70)
     }
 
     #[test]
     fn should_read_ht_friendship() {
         let pkx = Pk8::new(TEST_EKX);
         assert_eq!(pkx.ht_friendship(), 50)
+    }
+
+    #[test]
+    fn should_read_is_egg() {
+        let pkx = Pk8::new(TEST_EKX);
+        assert_eq!(pkx.is_egg(), false)
+    }
+
+    #[test]
+    fn should_read_current_handler() {
+        let pkx = Pk8::new(TEST_EKX);
+        assert_eq!(pkx.current_handler(), 1)
+    }
+
+    #[test]
+    fn should_read_current_friendship() {
+        let pkx = Pk8::new(TEST_EKX);
+        assert_eq!(pkx.current_friendship(), 50)
     }
 }

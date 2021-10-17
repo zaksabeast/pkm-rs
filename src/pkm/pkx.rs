@@ -33,9 +33,11 @@ pub trait Pkx: Sized {
 
     fn evs(&self) -> types::Stats;
 
-    fn ot_friendship(&self) -> u32;
+    fn ot_friendship(&self) -> u8;
 
-    fn ht_friendship(&self) -> u32;
+    fn ht_friendship(&self) -> u8;
+
+    fn current_handler(&self) -> u8;
 
     fn tsv(&self) -> u16 {
         (self.tid() ^ self.sid()) >> 4
@@ -85,5 +87,17 @@ pub trait Pkx: Sized {
 
     fn minted_nature(&self) -> types::Nature {
         self.nature()
+    }
+
+    fn is_egg(&self) -> bool {
+        (self.iv32() >> 30) & 1 == 1
+    }
+
+    fn current_friendship(&self) -> u8 {
+        if self.current_handler() == 0 {
+            self.ot_friendship()
+        } else {
+            self.ht_friendship()
+        }
     }
 }
