@@ -3,7 +3,7 @@ use core::convert::TryInto;
 use no_std_io::Reader;
 use safe_transmute::TriviallyTransmutable;
 
-pub type Pk7Bytes = [u8; Pk7::STORED_SIZE];
+type Pk7Bytes = [u8; Pk7::STORED_SIZE];
 
 pub struct Pk7 {
     data: Pk7Bytes,
@@ -17,30 +17,6 @@ impl Default for Pk7 {
     }
 }
 
-impl Pk7 {
-    pub const STORED_SIZE: usize = 232;
-    pub const BLOCK_SIZE: usize = 56;
-
-    pub fn new(data: Pk7Bytes) -> Self {
-        let seed_bytes: [u8; 4] = data[0..4].try_into().unwrap();
-        let seed = u32::from_le_bytes(seed_bytes);
-        Self {
-            data: poke_crypto::decrypt::<{ Pk7::STORED_SIZE }, { Pk7::BLOCK_SIZE }>(data, seed),
-        }
-    }
-
-    /// Defaults to an empty Pokemon if invalid
-    pub fn new_or_default(data: Pk7Bytes) -> Self {
-        let pkm = Self::new(data);
-
-        if pkm.is_valid() {
-            pkm
-        } else {
-            Self::default()
-        }
-    }
-}
-
 impl Reader for Pk7 {
     fn get_slice(&self) -> &[u8] {
         &self.data
@@ -48,6 +24,18 @@ impl Reader for Pk7 {
 }
 
 impl Pkx for Pk7 {
+    type StoredBytes = Pk7Bytes;
+    const STORED_SIZE: usize = 232;
+    const BLOCK_SIZE: usize = 56;
+
+    fn new(data: Self::StoredBytes) -> Self {
+        let seed_bytes: [u8; 4] = data[0..4].try_into().unwrap();
+        let seed = u32::from_le_bytes(seed_bytes);
+        Self {
+            data: poke_crypto::decrypt::<{ Pk7::STORED_SIZE }, { Pk7::BLOCK_SIZE }>(data, seed),
+        }
+    }
+
     fn encryption_constant(&self) -> u32 {
         self.default_read_le(0x00)
     }

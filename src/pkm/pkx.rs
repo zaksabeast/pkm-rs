@@ -1,6 +1,23 @@
 use super::types;
 
-pub trait Pkx: Sized {
+pub trait Pkx: Sized + Default {
+    type StoredBytes;
+    const STORED_SIZE: usize;
+    const BLOCK_SIZE: usize;
+
+    fn new(data: Self::StoredBytes) -> Self;
+
+    /// Defaults to an empty Pokemon if invalid
+    fn new_or_default(data: Self::StoredBytes) -> Self {
+        let pkm = Self::new(data);
+
+        if pkm.is_valid() {
+            pkm
+        } else {
+            Self::default()
+        }
+    }
+
     fn encryption_constant(&self) -> u32;
 
     fn sanity(&self) -> u16;
