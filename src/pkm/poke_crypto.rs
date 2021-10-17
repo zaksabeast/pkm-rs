@@ -1,3 +1,5 @@
+use core::convert::TryInto;
+
 // Thanks to PKHeX - https://github.com/kwsch/PKHeX/blob/4bb54334899cb2358b66bf97ba8d7f59c22430d7/PKHeX.Core/PKM/Util/PokeCrypto.cs
 
 #[rustfmt::skip]
@@ -79,4 +81,15 @@ pub(super) fn decrypt<const PKX_SIZE: usize, const BLOCK_SIZE: usize>(
 ) -> [u8; PKX_SIZE] {
     let pkx = crypt_pkm(ekx, seed);
     shuffle_array(pkx, seed, BLOCK_SIZE)
+}
+
+pub fn calculate_checksum(pkx: &[u8]) -> u16 {
+    let mut checksum = 0u16;
+
+    for chunks in pkx.chunks_exact(2) {
+        let chunk = u16::from_le_bytes(chunks.try_into().unwrap());
+        checksum = checksum.wrapping_add(chunk);
+    }
+
+    checksum
 }

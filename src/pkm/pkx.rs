@@ -3,6 +3,10 @@ use super::types;
 pub trait Pkx: Sized {
     fn encryption_constant(&self) -> u32;
 
+    fn sanity(&self) -> u16;
+
+    fn checksum(&self) -> u16;
+
     fn species(&self) -> types::Species;
 
     fn pid(&self) -> u32;
@@ -38,6 +42,8 @@ pub trait Pkx: Sized {
     fn ht_friendship(&self) -> u8;
 
     fn current_handler(&self) -> u8;
+
+    fn calculate_checksum(&self) -> u16;
 
     fn tsv(&self) -> u16 {
         (self.tid() ^ self.sid()) >> 4
@@ -99,5 +105,11 @@ pub trait Pkx: Sized {
         } else {
             self.ht_friendship()
         }
+    }
+
+    fn is_valid(&self) -> bool {
+        self.sanity() == 0
+            && self.checksum() == self.calculate_checksum()
+            && self.species() != types::Species::None
     }
 }

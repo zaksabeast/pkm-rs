@@ -33,6 +33,14 @@ impl Pkx for Pk8 {
         self.default_read_le(0x00)
     }
 
+    fn sanity(&self) -> u16 {
+        self.default_read_le(0x04)
+    }
+
+    fn checksum(&self) -> u16 {
+        self.default_read_le(0x06)
+    }
+
     fn species(&self) -> types::Species {
         self.default_read_le::<u16>(0x08).into()
     }
@@ -115,6 +123,10 @@ impl Pkx for Pk8 {
 
     fn ot_friendship(&self) -> u8 {
         self.default_read(0x112)
+    }
+
+    fn calculate_checksum(&self) -> u16 {
+        poke_crypto::calculate_checksum(&self.data[8..Pk8::STORED_SIZE])
     }
 }
 
@@ -364,5 +376,29 @@ mod test {
     fn should_read_current_friendship() {
         let pkx = Pk8::new(TEST_EKX);
         assert_eq!(pkx.current_friendship(), 50)
+    }
+
+    #[test]
+    fn should_read_sanity() {
+        let pkx = Pk8::new(TEST_EKX);
+        assert_eq!(pkx.sanity(), 0)
+    }
+
+    #[test]
+    fn should_read_checksum() {
+        let pkx = Pk8::new(TEST_EKX);
+        assert_eq!(pkx.checksum(), 0x292e)
+    }
+
+    #[test]
+    fn should_calculate_checksum() {
+        let pkx = Pk8::new(TEST_EKX);
+        assert_eq!(pkx.calculate_checksum(), 0x292e)
+    }
+
+    #[test]
+    fn should_read_is_valid() {
+        let pkx = Pk8::new(TEST_EKX);
+        assert_eq!(pkx.is_valid(), true)
     }
 }
