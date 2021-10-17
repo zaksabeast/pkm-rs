@@ -272,6 +272,20 @@ mod test {
     }
 
     #[test]
+    fn should_read_ivs() {
+        let pkx = Pk7::new(TEST_EKX);
+        let stats = types::Stats {
+            hp: 14,
+            atk: 20,
+            def: 10,
+            spa: 21,
+            spd: 30,
+            spe: 10,
+        };
+        assert_eq!(pkx.ivs(), stats)
+    }
+
+    #[test]
     fn should_read_evs() {
         let pkx = Pk7::new(TEST_EKX);
         let stats = types::Stats {
