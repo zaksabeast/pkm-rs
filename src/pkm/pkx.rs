@@ -14,6 +14,18 @@ pub trait Pkx: Reader + Sized {
 
     fn sid(&self) -> u16;
 
+    fn nature(&self) -> types::Nature;
+
+    fn ability(&self) -> types::Ability;
+
+    fn ability_number(&self) -> types::AbilityNumber;
+
+    fn language(&self) -> types::Language;
+
+    fn gender(&self) -> types::Gender;
+
+    fn iv32(&self) -> u32;
+
     fn tsv(&self) -> u16 {
         (self.tid() ^ self.sid()) >> 4
     }
@@ -27,18 +39,6 @@ pub trait Pkx: Reader + Sized {
     fn is_shiny(&self) -> bool {
         self.psv() == self.tsv()
     }
-
-    fn nature(&self) -> types::Nature;
-
-    fn ability(&self) -> types::Ability;
-
-    fn ability_number(&self) -> types::AbilityNumber;
-
-    fn language(&self) -> types::Language;
-
-    fn gender(&self) -> types::Gender;
-
-    fn iv32(&self) -> u32;
 
     fn ivs(&self) -> types::Stats {
         let iv32 = self.iv32();
