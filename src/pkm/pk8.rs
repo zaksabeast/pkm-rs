@@ -61,6 +61,10 @@ impl Pkx for Pk8 {
         self.default_read::<u8>(0x20).into()
     }
 
+    fn minted_nature(&self) -> types::Nature {
+        self.default_read::<u8>(0x21).into()
+    }
+
     fn gender(&self) -> types::Gender {
         let byte = self.default_read::<u8>(0x22);
         ((byte >> 2) & 3).into()
@@ -238,6 +242,12 @@ mod test {
     fn should_read_nature() {
         let pkx = Pk8::new(TEST_EKX);
         assert_eq!(pkx.nature(), types::Nature::Adamant)
+    }
+
+    #[test]
+    fn should_read_minted_nature() {
+        let pkx = Pk8::new(TEST_EKX);
+        assert_eq!(pkx.minted_nature(), types::Nature::Adamant)
     }
 
     #[test]

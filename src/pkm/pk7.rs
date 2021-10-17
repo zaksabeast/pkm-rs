@@ -230,6 +230,12 @@ mod test {
     }
 
     #[test]
+    fn should_read_minted_nature() {
+        let pkx = Pk7::new(TEST_EKX);
+        assert_eq!(pkx.minted_nature(), types::Nature::Serious)
+    }
+
+    #[test]
     fn should_read_ability() {
         let pkx = Pk7::new(TEST_EKX);
         assert_eq!(pkx.ability(), types::Ability::Torrent)

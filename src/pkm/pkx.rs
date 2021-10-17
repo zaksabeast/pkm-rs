@@ -82,4 +82,8 @@ pub trait Pkx: Sized {
     fn gender_ratio(&self) -> types::GenderRatio {
         self.species().get_gender_ratio()
     }
+
+    fn minted_nature(&self) -> types::Nature {
+        self.nature()
+    }
 }
