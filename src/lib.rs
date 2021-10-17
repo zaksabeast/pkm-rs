@@ -2,4 +2,5 @@
 
 extern crate alloc;
 
-pub mod pkm;
+mod pkm;
+pub use pkm::*;

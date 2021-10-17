@@ -9,8 +9,7 @@ pub use pk7::*;
 mod pk8;
 pub use pk8::*;
 
-mod types;
-pub use types::*;
+pub mod types;
 
 mod pkx;
 pub use pkx::*;
