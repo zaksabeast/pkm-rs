@@ -9,6 +9,14 @@ pub struct Pk7 {
     data: Pk7Bytes,
 }
 
+impl Default for Pk7 {
+    fn default() -> Self {
+        Self {
+            data: [0; Pk7::STORED_SIZE],
+        }
+    }
+}
+
 impl Pk7 {
     pub const STORED_SIZE: usize = 232;
     pub const BLOCK_SIZE: usize = 56;
@@ -18,6 +26,17 @@ impl Pk7 {
         let seed = u32::from_le_bytes(seed_bytes);
         Self {
             data: poke_crypto::decrypt::<{ Pk7::STORED_SIZE }, { Pk7::BLOCK_SIZE }>(data, seed),
+        }
+    }
+
+    /// Defaults to an empty Pokemon if invalid
+    pub fn new_or_default(data: Pk7Bytes) -> Self {
+        let pkm = Self::new(data);
+
+        if pkm.is_valid() {
+            pkm
+        } else {
+            Self::default()
         }
     }
 }
