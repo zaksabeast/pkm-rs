@@ -86,6 +86,17 @@ impl Pkx for Pk6 {
     fn move4(&self) -> types::Move {
         self.default_read::<u16>(0x60).into()
     }
+
+    fn evs(&self) -> types::Stats {
+        types::Stats {
+            hp: self.default_read(0x1E),
+            atk: self.default_read(0x1F),
+            def: self.default_read(0x20),
+            spa: self.default_read(0x21),
+            spd: self.default_read(0x22),
+            spe: self.default_read(0x23),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -258,5 +269,19 @@ mod test {
     fn should_read_move4() {
         let pkx = Pk6::new(TEST_EKX);
         assert_eq!(pkx.move4(), types::Move::None)
+    }
+
+    #[test]
+    fn should_read_evs() {
+        let pkx = Pk6::new(TEST_EKX);
+        let stats = types::Stats {
+            hp: 252,
+            atk: 0,
+            def: 6,
+            spa: 252,
+            spd: 0,
+            spe: 0,
+        };
+        assert_eq!(pkx.evs(), stats)
     }
 }

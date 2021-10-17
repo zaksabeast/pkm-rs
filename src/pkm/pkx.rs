@@ -34,6 +34,8 @@ pub trait Pkx: Reader + Sized {
 
     fn move4(&self) -> types::Move;
 
+    fn evs(&self) -> types::Stats;
+
     fn tsv(&self) -> u16 {
         (self.tid() ^ self.sid()) >> 4
     }
