@@ -1,6 +1,7 @@
 use core::fmt;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[repr(C)]
 pub struct Stats {
     pub hp: u8,
     pub atk: u8,
