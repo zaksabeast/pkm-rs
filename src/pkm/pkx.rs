@@ -36,6 +36,10 @@ pub trait Pkx: Reader + Sized {
 
     fn evs(&self) -> types::Stats;
 
+    fn ot_friendship(&self) -> u32;
+
+    fn ht_friendship(&self) -> u32;
+
     fn tsv(&self) -> u16 {
         (self.tid() ^ self.sid()) >> 4
     }

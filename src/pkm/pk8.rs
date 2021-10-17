@@ -96,6 +96,14 @@ impl Pkx for Pk8 {
             spe: self.default_read(0x2B),
         }
     }
+
+    fn ot_friendship(&self) -> u32 {
+        self.default_read(0x112)
+    }
+
+    fn ht_friendship(&self) -> u32 {
+        self.default_read(0xC8)
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -308,5 +316,17 @@ mod test {
             spe: 0,
         };
         assert_eq!(pkx.evs(), stats)
+    }
+
+    #[test]
+    fn should_read_ot_friendship() {
+        let pkx = Pk8::new(TEST_EKX);
+        assert_eq!(pkx.ot_friendship(), 0)
+    }
+
+    #[test]
+    fn should_read_ht_friendship() {
+        let pkx = Pk8::new(TEST_EKX);
+        assert_eq!(pkx.ht_friendship(), 50)
     }
 }
