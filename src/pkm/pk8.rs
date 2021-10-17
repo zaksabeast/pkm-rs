@@ -69,6 +69,22 @@ impl Pkx for Pk8 {
         let byte = self.default_read::<u8>(0x22);
         ((byte >> 2) & 3).into()
     }
+
+    fn move1(&self) -> types::Move {
+        self.default_read::<u16>(0x72).into()
+    }
+
+    fn move2(&self) -> types::Move {
+        self.default_read::<u16>(0x74).into()
+    }
+
+    fn move3(&self) -> types::Move {
+        self.default_read::<u16>(0x76).into()
+    }
+
+    fn move4(&self) -> types::Move {
+        self.default_read::<u16>(0x78).into()
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -152,6 +168,11 @@ mod test {
     }
 
     #[test]
+    fn pk8_data_size_should_be_232() {
+        assert_eq!(core::mem::size_of::<Pk8Data>(), Pk8::STORED_SIZE);
+    }
+
+    #[test]
     fn should_read_species() {
         let pkx = Pk8::new(TEST_EKX);
         assert_eq!(pkx.species(), types::Species::Ditto);
@@ -227,7 +248,26 @@ mod test {
     }
 
     #[test]
-    fn pk8_data_size_should_be_232() {
-        assert_eq!(core::mem::size_of::<Pk8Data>(), Pk8::STORED_SIZE);
+    fn should_read_move1() {
+        let pkx = Pk8::new(TEST_EKX);
+        assert_eq!(pkx.move1(), types::Move::Transform)
+    }
+
+    #[test]
+    fn should_read_move2() {
+        let pkx = Pk8::new(TEST_EKX);
+        assert_eq!(pkx.move2(), types::Move::None)
+    }
+
+    #[test]
+    fn should_read_move3() {
+        let pkx = Pk8::new(TEST_EKX);
+        assert_eq!(pkx.move3(), types::Move::None)
+    }
+
+    #[test]
+    fn should_read_move4() {
+        let pkx = Pk8::new(TEST_EKX);
+        assert_eq!(pkx.move4(), types::Move::None)
     }
 }

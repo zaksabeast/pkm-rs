@@ -70,6 +70,22 @@ impl Pkx for Pk7 {
         let byte = self.default_read::<u8>(0x1D);
         ((byte >> 1) & 3).into()
     }
+
+    fn move1(&self) -> types::Move {
+        self.default_read::<u16>(0x5A).into()
+    }
+
+    fn move2(&self) -> types::Move {
+        self.default_read::<u16>(0x5C).into()
+    }
+
+    fn move3(&self) -> types::Move {
+        self.default_read::<u16>(0x5E).into()
+    }
+
+    fn move4(&self) -> types::Move {
+        self.default_read::<u16>(0x60).into()
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -137,6 +153,11 @@ mod test {
 
         let pkx = Pk7::new(TEST_EKX);
         assert_eq!(pkx.get_slice(), result);
+    }
+
+    #[test]
+    fn pk7_data_size_should_be_232() {
+        assert_eq!(core::mem::size_of::<Pk7Data>(), Pk7::STORED_SIZE);
     }
 
     #[test]
@@ -216,7 +237,26 @@ mod test {
     }
 
     #[test]
-    fn pk7_data_size_should_be_232() {
-        assert_eq!(core::mem::size_of::<Pk7Data>(), Pk7::STORED_SIZE);
+    fn should_read_move1() {
+        let pkx = Pk7::new(TEST_EKX);
+        assert_eq!(pkx.move1(), types::Move::Pound)
+    }
+
+    #[test]
+    fn should_read_move2() {
+        let pkx = Pk7::new(TEST_EKX);
+        assert_eq!(pkx.move2(), types::Move::WaterGun)
+    }
+
+    #[test]
+    fn should_read_move3() {
+        let pkx = Pk7::new(TEST_EKX);
+        assert_eq!(pkx.move3(), types::Move::Growl)
+    }
+
+    #[test]
+    fn should_read_move4() {
+        let pkx = Pk7::new(TEST_EKX);
+        assert_eq!(pkx.move4(), types::Move::None)
     }
 }
