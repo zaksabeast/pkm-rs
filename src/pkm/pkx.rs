@@ -1,10 +1,7 @@
 use super::types;
-use no_std_io::Reader;
 
-pub trait Pkx: Reader + Sized {
-    fn encryption_constant(&self) -> u32 {
-        self.default_read_le(0)
-    }
+pub trait Pkx: Sized {
+    fn encryption_constant(&self) -> u32;
 
     fn species(&self) -> types::Species;
 

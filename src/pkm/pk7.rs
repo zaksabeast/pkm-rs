@@ -29,12 +29,12 @@ impl Reader for Pk7 {
 }
 
 impl Pkx for Pk7 {
-    fn species(&self) -> types::Species {
-        self.default_read_le::<u16>(8).into()
+    fn encryption_constant(&self) -> u32 {
+        self.default_read_le(0x00)
     }
 
-    fn pid(&self) -> u32 {
-        self.default_read_le(0x18)
+    fn species(&self) -> types::Species {
+        self.default_read_le::<u16>(0x08).into()
     }
 
     fn tid(&self) -> u16 {
@@ -43,10 +43,6 @@ impl Pkx for Pk7 {
 
     fn sid(&self) -> u16 {
         self.default_read_le(0x0E)
-    }
-
-    fn nature(&self) -> types::Nature {
-        self.default_read::<u8>(0x1C).into()
     }
 
     fn ability(&self) -> types::Ability {
@@ -58,17 +54,28 @@ impl Pkx for Pk7 {
         self.default_read::<u8>(0x15).into()
     }
 
-    fn iv32(&self) -> u32 {
-        self.default_read_le(0x74)
+    fn pid(&self) -> u32 {
+        self.default_read_le(0x18)
     }
 
-    fn language(&self) -> types::Language {
-        self.default_read::<u8>(0xE3).into()
+    fn nature(&self) -> types::Nature {
+        self.default_read::<u8>(0x1C).into()
     }
 
     fn gender(&self) -> types::Gender {
         let byte = self.default_read::<u8>(0x1D);
         ((byte >> 1) & 3).into()
+    }
+
+    fn evs(&self) -> types::Stats {
+        types::Stats {
+            hp: self.default_read(0x1E),
+            atk: self.default_read(0x1F),
+            def: self.default_read(0x20),
+            spa: self.default_read(0x21),
+            spd: self.default_read(0x22),
+            spe: self.default_read(0x23),
+        }
     }
 
     fn move1(&self) -> types::Move {
@@ -87,23 +94,20 @@ impl Pkx for Pk7 {
         self.default_read::<u16>(0x60).into()
     }
 
-    fn evs(&self) -> types::Stats {
-        types::Stats {
-            hp: self.default_read(0x1E),
-            atk: self.default_read(0x1F),
-            def: self.default_read(0x20),
-            spa: self.default_read(0x21),
-            spd: self.default_read(0x22),
-            spe: self.default_read(0x23),
-        }
+    fn iv32(&self) -> u32 {
+        self.default_read_le(0x74)
+    }
+
+    fn ht_friendship(&self) -> u32 {
+        self.default_read(0xA2)
     }
 
     fn ot_friendship(&self) -> u32 {
         self.default_read(0xCA)
     }
 
-    fn ht_friendship(&self) -> u32 {
-        self.default_read(0xA2)
+    fn language(&self) -> types::Language {
+        self.default_read::<u8>(0xE3).into()
     }
 }
 
