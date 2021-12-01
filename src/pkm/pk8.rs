@@ -90,9 +90,9 @@ impl Pkx for Pk8 {
             hp: self.default_read(0x26),
             atk: self.default_read(0x27),
             def: self.default_read(0x28),
-            spa: self.default_read(0x29),
-            spd: self.default_read(0x2A),
-            spe: self.default_read(0x2B),
+            spe: self.default_read(0x29),
+            spa: self.default_read(0x2A),
+            spd: self.default_read(0x2B),
         }
     }
 
@@ -348,9 +348,9 @@ mod test {
             hp: 252,
             atk: 0,
             def: 6,
-            spa: 252,
+            spa: 0,
             spd: 0,
-            spe: 0,
+            spe: 252,
         };
         assert_eq!(pkx.evs(), stats)
     }

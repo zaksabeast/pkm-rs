@@ -87,9 +87,9 @@ impl Pkx for Pk6 {
             hp: self.default_read(0x1E),
             atk: self.default_read(0x1F),
             def: self.default_read(0x20),
-            spa: self.default_read(0x21),
-            spd: self.default_read(0x22),
-            spe: self.default_read(0x23),
+            spe: self.default_read(0x21),
+            spa: self.default_read(0x22),
+            spd: self.default_read(0x23),
         }
     }
 
@@ -333,9 +333,9 @@ mod test {
             hp: 252,
             atk: 0,
             def: 6,
-            spa: 252,
+            spa: 0,
             spd: 0,
-            spe: 0,
+            spe: 252,
         };
         assert_eq!(pkx.evs(), stats)
     }
