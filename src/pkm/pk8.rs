@@ -408,4 +408,10 @@ mod test {
         let pkx = Pk8::new(TEST_EKX);
         assert_eq!(pkx.is_valid(), true)
     }
+
+    #[test]
+    fn should_return_not_shiny_for_default() {
+        let pkx = Pk8::default();
+        assert_eq!(pkx.is_shiny(), false)
+    }
 }

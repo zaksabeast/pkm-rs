@@ -73,7 +73,7 @@ pub trait Pkx: Sized + Default {
     }
 
     fn is_shiny(&self) -> bool {
-        self.psv() == self.tsv()
+        self.is_valid() && self.psv() == self.tsv()
     }
 
     fn ivs(&self) -> types::Stats {
