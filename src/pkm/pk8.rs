@@ -151,7 +151,7 @@ unsafe impl TriviallyTransmutable for Pk8Data {}
 
 impl From<Pk8Data> for Pk8 {
     fn from(data: Pk8Data) -> Self {
-        Self::new(data.0)
+        Self::new_or_default(data.0)
     }
 }
 
