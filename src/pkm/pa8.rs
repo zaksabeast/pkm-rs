@@ -3,28 +3,28 @@ use core::convert::TryInto;
 use no_std_io::Reader;
 use safe_transmute::TriviallyTransmutable;
 
-type Pk9Bytes = [u8; Pk9::STORED_SIZE];
+type Pa8Bytes = [u8; Pa8::STORED_SIZE];
 
-pub struct Pk9 {
-    data: Pk9Bytes,
+pub struct Pa8 {
+    data: Pa8Bytes,
 }
 
-impl Default for Pk9 {
+impl Default for Pa8 {
     fn default() -> Self {
         Self {
-            data: [0; Pk9::STORED_SIZE],
+            data: [0; Pa8::STORED_SIZE],
         }
     }
 }
 
-impl Reader for Pk9 {
+impl Reader for Pa8 {
     fn get_slice(&self) -> &[u8] {
         &self.data
     }
 }
 
-impl Pkx for Pk9 {
-    type StoredBytes = Pk9Bytes;
+impl Pkx for Pa8 {
+    type StoredBytes = Pa8Bytes;
     const STORED_SIZE: usize = 360;
     const BLOCK_SIZE: usize = 88;
 
@@ -32,7 +32,7 @@ impl Pkx for Pk9 {
         let seed_bytes: [u8; 4] = data[0..4].try_into().unwrap();
         let seed = u32::from_le_bytes(seed_bytes);
         Self {
-            data: poke_crypto::decrypt::<{ Pk9::STORED_SIZE }, { Pk9::BLOCK_SIZE }>(data, seed),
+            data: poke_crypto::decrypt::<{ Pa8::STORED_SIZE }, { Pa8::BLOCK_SIZE }>(data, seed),
         }
     }
 
@@ -117,11 +117,11 @@ impl Pkx for Pk9 {
     }
 
     fn current_handler(&self) -> u8 {
-        self.default_read(0xC4)
+        self.default_read(0xD4)
     }
 
     fn ht_friendship(&self) -> u8 {
-        self.default_read(0xC8)
+        self.default_read(0xD8)
     }
 
     fn language(&self) -> types::Language {
@@ -129,28 +129,28 @@ impl Pkx for Pk9 {
     }
 
     fn ot_friendship(&self) -> u8 {
-        self.default_read(0x112)
+        self.default_read(0x11A)
     }
 
     fn calculate_checksum(&self) -> u16 {
-        poke_crypto::calculate_checksum(&self.data[8..Pk9::STORED_SIZE])
+        poke_crypto::calculate_checksum(&self.data[8..Pa8::STORED_SIZE])
     }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Pk9Data(Pk9Bytes);
+pub struct Pa8Data(Pa8Bytes);
 
-impl Default for Pk9Data {
+impl Default for Pa8Data {
     fn default() -> Self {
-        Self([0; Pk9::STORED_SIZE])
+        Self([0; Pa8::STORED_SIZE])
     }
 }
 
-// This is safe because the bytes in Pk9Data can be anything
-unsafe impl TriviallyTransmutable for Pk9Data {}
+// This is safe because the bytes in Pa8Data can be anything
+unsafe impl TriviallyTransmutable for Pa8Data {}
 
-impl From<Pk9Data> for Pk9 {
-    fn from(data: Pk9Data) -> Self {
+impl From<Pa8Data> for Pa8 {
+    fn from(data: Pa8Data) -> Self {
         Self::new_or_default(data.0)
     }
 }
@@ -159,7 +159,7 @@ impl From<Pk9Data> for Pk9 {
 mod test {
     use super::*;
 
-    const TEST_EKX: Pk9Bytes = [
+    const TEST_EKX: Pa8Bytes = [
         0x6d, 0xed, 0x68, 0xac, 0x00, 0x00, 0x8b, 0x31, 0x08, 0xb0, 0x20, 0x98, 0x54, 0xb5, 0x9e,
         0x98, 0xe2, 0x86, 0x37, 0x1e, 0x5d, 0x39, 0x4d, 0x22, 0xe2, 0x22, 0x6e, 0x75, 0x52, 0x0f,
         0x16, 0xec, 0x06, 0x8e, 0x23, 0x53, 0xb3, 0x37, 0x40, 0xe3, 0x9f, 0xf8, 0xd2, 0xb6, 0x36,
@@ -188,7 +188,7 @@ mod test {
 
     #[test]
     fn should_decrypt() {
-        let result: Pk9Bytes = [
+        let result: Pa8Bytes = [
             0x6d, 0xed, 0x68, 0xac, 0x00, 0x00, 0x8b, 0x31, 0x29, 0x00, 0x00, 0x00, 0x23, 0x2f,
             0x97, 0xf4, 0xd9, 0x02, 0x00, 0x00, 0x27, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x4b, 0xba, 0xab, 0x02, 0x04, 0x04, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -217,121 +217,121 @@ mod test {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
 
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.get_slice(), result);
     }
 
     #[test]
-    fn pk9_data_size_should_be_232() {
-        assert_eq!(core::mem::size_of::<Pk9Data>(), Pk9::STORED_SIZE);
+    fn pa8_data_size_should_be_232() {
+        assert_eq!(core::mem::size_of::<Pa8Data>(), Pa8::STORED_SIZE);
     }
 
     #[test]
     fn should_read_species() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.species(), types::Species::Zubat);
     }
 
     #[test]
     fn should_read_pid() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         let pid = 0x02abba4b;
         assert_eq!(pkx.pid(), pid)
     }
 
     #[test]
     fn should_read_tid() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.tid(), 12067)
     }
 
     #[test]
     fn should_read_sid() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.sid(), 62615)
     }
 
     #[test]
     fn should_read_tsv() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.tsv(), 3515)
     }
 
     #[test]
     fn should_read_psv() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.psv(), 2958)
     }
 
     #[test]
     fn should_read_nature() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.nature(), types::Nature::Naughty)
     }
 
     #[test]
     fn should_read_minted_nature() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.minted_nature(), types::Nature::Naughty)
     }
 
     #[test]
     fn should_read_ability() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.ability(), types::Ability::InnerFocus)
     }
 
     #[test]
     fn should_read_ability_number() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.ability_number(), types::AbilityNumber::First)
     }
 
     #[test]
     fn should_read_hidden_power() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.hidden_power(), types::HiddenPower::Ground)
     }
 
     #[test]
     fn should_read_language() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.language(), types::Language::English)
     }
 
     #[test]
     fn should_read_gender() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.gender(), types::Gender::Female)
     }
 
     #[test]
     fn should_read_move1() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.move1(), types::Move::Gust)
     }
 
     #[test]
     fn should_read_move2() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.move2(), types::Move::Hypnosis)
     }
 
     #[test]
     fn should_read_move3() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.move3(), types::Move::None)
     }
 
     #[test]
     fn should_read_move4() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.move4(), types::Move::None)
     }
 
     #[test]
     fn should_read_ivs() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         let stats = types::Stats {
             hp: 3,
             atk: 0,
@@ -345,7 +345,7 @@ mod test {
 
     #[test]
     fn should_read_evs() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         let stats = types::Stats {
             hp: 0,
             atk: 0,
@@ -359,61 +359,61 @@ mod test {
 
     #[test]
     fn should_read_ot_friendship() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.ot_friendship(), 0)
     }
 
     #[test]
     fn should_read_ht_friendship() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.ht_friendship(), 0)
     }
 
     #[test]
     fn should_read_is_egg() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.is_egg(), false)
     }
 
     #[test]
     fn should_read_current_handler() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.current_handler(), 0)
     }
 
     #[test]
     fn should_read_current_friendship() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.current_friendship(), 0)
     }
 
     #[test]
     fn should_read_sanity() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.sanity(), 0)
     }
 
     #[test]
     fn should_read_checksum() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.checksum(), 0x318b)
     }
 
     #[test]
     fn should_calculate_checksum() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.calculate_checksum(), 0x318b)
     }
 
     #[test]
     fn should_read_is_valid() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.is_valid(), true)
     }
 
     #[test]
     fn should_read_is_shiny_false() {
-        let pkx = Pk9::new(TEST_EKX);
+        let pkx = Pa8::new(TEST_EKX);
         assert_eq!(pkx.is_shiny(), false)
     }
 
@@ -447,13 +447,13 @@ mod test {
             0xac, 0xec, 0x0a, 0x13, 0x71, 0xa4, 0xfe, 0x82, 0x37, 0xa9, 0xf6, 0x65, 0xce, 0xc3,
             0xf8, 0xe8, 0xa0, 0xa5, 0x36, 0x82, 0x37, 0x55, 0xfa, 0x98,
         ];
-        let pkx = Pk9::new(shiny_ekx);
+        let pkx = Pa8::new(shiny_ekx);
         assert_eq!(pkx.is_shiny(), true)
     }
 
     #[test]
     fn should_return_not_shiny_for_default() {
-        let pkx = Pk9::default();
+        let pkx = Pa8::default();
         assert_eq!(pkx.is_shiny(), false)
     }
 }
