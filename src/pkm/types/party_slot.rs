@@ -12,6 +12,7 @@ pub enum PartySlot {
 }
 
 impl PartySlot {
+    #[must_use]
     pub fn increment(&self) -> Self {
         match self {
             Self::Slot1 => Self::Slot2,
@@ -23,6 +24,7 @@ impl PartySlot {
         }
     }
 
+    #[must_use]
     pub fn decrement(&self) -> Self {
         match self {
             Self::Slot1 => Self::Slot6,
