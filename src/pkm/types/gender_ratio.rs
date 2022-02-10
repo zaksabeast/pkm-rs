@@ -931,5 +931,12 @@ pub fn get_species_gender_ratio(species: &Species) -> GenderRatio {
         Species::Glastrier => GenderRatio::Genderless,
         Species::Spectrier => GenderRatio::Genderless,
         Species::Calyrex => GenderRatio::Genderless,
+        Species::Wyrdeer => GenderRatio::OneToOne,
+        Species::Kleavor => GenderRatio::OneToOne,
+        Species::Ursaluna => GenderRatio::OneToOne,
+        Species::Basculegion => GenderRatio::OneToOne,
+        Species::Sneasler => GenderRatio::OneToOne,
+        Species::Overqwil => GenderRatio::OneToOne,
+        Species::Enamorus => GenderRatio::FemaleOnly,
     }
 }

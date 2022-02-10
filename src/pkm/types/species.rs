@@ -906,6 +906,13 @@ pub enum Species {
     Glastrier = 896,
     Spectrier = 897,
     Calyrex = 898,
+    Wyrdeer = 899,
+    Kleavor = 900,
+    Ursaluna = 901,
+    Basculegion = 902,
+    Sneasler = 903,
+    Overqwil = 904,
+    Enamorus = 905,
 }
 
 impl Species {
