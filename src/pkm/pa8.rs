@@ -1,9 +1,8 @@
 use super::{pkx::Pkx, poke_crypto, types};
 use core::convert::TryInto;
 use no_std_io::Reader;
-use safe_transmute::TriviallyTransmutable;
 
-type Pa8Bytes = [u8; Pa8::STORED_SIZE];
+pub type Pa8Bytes = [u8; Pa8::STORED_SIZE];
 
 pub struct Pa8 {
     data: Pa8Bytes,
@@ -137,21 +136,9 @@ impl Pkx for Pa8 {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Pa8Data(Pa8Bytes);
-
-impl Default for Pa8Data {
-    fn default() -> Self {
-        Self([0; Pa8::STORED_SIZE])
-    }
-}
-
-// This is safe because the bytes in Pa8Data can be anything
-unsafe impl TriviallyTransmutable for Pa8Data {}
-
-impl From<Pa8Data> for Pa8 {
-    fn from(data: Pa8Data) -> Self {
-        Self::new_or_default(data.0)
+impl From<Pa8Bytes> for Pa8 {
+    fn from(data: Pa8Bytes) -> Self {
+        Self::new_or_default(data)
     }
 }
 
@@ -223,7 +210,7 @@ mod test {
 
     #[test]
     fn pa8_data_size_should_be_232() {
-        assert_eq!(core::mem::size_of::<Pa8Data>(), Pa8::STORED_SIZE);
+        assert_eq!(core::mem::size_of::<Pa8Bytes>(), Pa8::STORED_SIZE);
     }
 
     #[test]
