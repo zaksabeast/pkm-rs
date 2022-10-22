@@ -1,6 +1,6 @@
 use super::{pkx::Pkx, poke_crypto, types};
 use core::convert::TryInto;
-use no_std_io::Reader;
+use no_std_io::{EndianRead, Reader};
 
 pub type Pa8Bytes = [u8; Pa8::STORED_SIZE];
 
@@ -139,6 +139,25 @@ impl Pkx for Pa8 {
 impl From<Pa8Bytes> for Pa8 {
     fn from(data: Pa8Bytes) -> Self {
         Self::new_or_default(data)
+    }
+}
+
+#[derive(EndianRead)]
+pub struct Ea8 {
+    data: Pa8Bytes,
+}
+
+impl Default for Ea8 {
+    fn default() -> Self {
+        Self {
+            data: [0; Pa8::STORED_SIZE],
+        }
+    }
+}
+
+impl From<Ea8> for Pa8 {
+    fn from(ekx: Ea8) -> Self {
+        ekx.data.into()
     }
 }
 

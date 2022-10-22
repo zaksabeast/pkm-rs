@@ -1,6 +1,6 @@
 use super::{pkx::Pkx, poke_crypto, types};
 use core::convert::TryInto;
-use no_std_io::Reader;
+use no_std_io::{EndianRead, Reader};
 
 pub type Pk7Bytes = [u8; Pk7::STORED_SIZE];
 
@@ -136,6 +136,25 @@ impl Pkx for Pk7 {
 impl From<Pk7Bytes> for Pk7 {
     fn from(data: Pk7Bytes) -> Self {
         Self::new_or_default(data)
+    }
+}
+
+#[derive(EndianRead)]
+pub struct Ek7 {
+    data: Pk7Bytes,
+}
+
+impl Default for Ek7 {
+    fn default() -> Self {
+        Self {
+            data: [0; Pk7::STORED_SIZE],
+        }
+    }
+}
+
+impl From<Ek7> for Pk7 {
+    fn from(ekx: Ek7) -> Self {
+        ekx.data.into()
     }
 }
 
