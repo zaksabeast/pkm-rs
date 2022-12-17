@@ -1,16 +1,15 @@
 use super::{pkx::Pkx, poke_crypto, types};
+use alloc::{vec, vec::Vec};
 use no_std_io::{EndianRead, Reader};
 
-pub type Pk8Bytes = [u8; Pk8::STORED_SIZE];
-
 pub struct Pk8 {
-    data: Pk8Bytes,
+    data: Vec<u8>,
 }
 
 impl Default for Pk8 {
     fn default() -> Self {
         Self {
-            data: [0; Pk8::STORED_SIZE],
+            data: vec![0; Pk8::STORED_SIZE],
         }
     }
 }
@@ -22,28 +21,16 @@ impl Reader for Pk8 {
 }
 
 impl Pkx for Pk8 {
-    type StoredBytes = Pk8Bytes;
-    const STORED_SIZE: usize = 328;
-    const BLOCK_SIZE: usize = 80;
+    const STORED_SIZE: usize = 0x148;
+    const PARTY_SIZE: usize = 0x158;
+    const BLOCK_SIZE: usize = 0x50;
 
-    fn new_pkx(data: Self::StoredBytes) -> Self {
-        Self { data }
+    fn new_pkx<T: Into<Vec<u8>> + AsRef<[u8]>>(data: T) -> Self {
+        Self { data: data.into() }
     }
 
-    fn is_encrypted(data: &Self::StoredBytes) -> bool {
+    fn is_encrypted(data: &[u8]) -> bool {
         data.default_read_le::<u16>(0x70) != 0 || data.default_read_le::<u16>(0x110) != 0
-    }
-
-    fn decrypt(data: Self::StoredBytes) -> Self::StoredBytes {
-        poke_crypto::decrypt::<{ Self::STORED_SIZE }, { Self::BLOCK_SIZE }>(data)
-    }
-
-    fn encrypt(data: Self::StoredBytes) -> Self::StoredBytes {
-        poke_crypto::encrypt::<{ Self::STORED_SIZE }, { Self::BLOCK_SIZE }>(data)
-    }
-
-    fn get_encrypted(&self) -> Self::StoredBytes {
-        Self::encrypt(self.data)
     }
 
     fn encryption_constant(&self) -> u32 {
@@ -147,15 +134,25 @@ impl Pkx for Pk8 {
     }
 }
 
-impl From<Pk8Bytes> for Pk8 {
-    fn from(data: Pk8Bytes) -> Self {
+pub type Pk8PartyBytes = [u8; Pk8::PARTY_SIZE];
+
+impl From<Pk8PartyBytes> for Pk8 {
+    fn from(data: Pk8PartyBytes) -> Self {
+        Self::new_or_default(data)
+    }
+}
+
+pub type Pk8StoredBytes = [u8; Pk8::STORED_SIZE];
+
+impl From<Pk8StoredBytes> for Pk8 {
+    fn from(data: Pk8StoredBytes) -> Self {
         Self::new_or_default(data)
     }
 }
 
 #[derive(EndianRead)]
 pub struct Ek8 {
-    data: Pk8Bytes,
+    data: Pk8StoredBytes,
 }
 
 impl Default for Ek8 {
@@ -171,12 +168,11 @@ impl From<Ek8> for Pk8 {
         ekx.data.into()
     }
 }
-
 #[cfg(test)]
 mod test {
     use super::*;
 
-    const TEST_EKX: Pk8Bytes = [
+    const TEST_EKX: Pk8StoredBytes = [
         0x80, 0x5C, 0x86, 0x02, 0x00, 0x00, 0x2E, 0x29, 0x20, 0x0E, 0x56, 0x4F, 0xAA, 0xF1, 0xF4,
         0x2F, 0xA5, 0x9E, 0xCC, 0xFE, 0x8B, 0xF2, 0x32, 0x20, 0x51, 0xD1, 0x99, 0xDD, 0x42, 0xD2,
         0x55, 0xE5, 0x05, 0x1F, 0x85, 0x2E, 0x6A, 0xED, 0x2A, 0x14, 0x5A, 0x21, 0x96, 0xDB, 0x76,
@@ -201,7 +197,7 @@ mod test {
         0x47, 0xDC, 0x62, 0xB7, 0x11, 0xBF, 0x12, 0x3F, 0xE2, 0x4F, 0x7B, 0xDF, 0xBC,
     ];
 
-    const TEST_PKX: Pk8Bytes = [
+    const TEST_PKX: Pk8StoredBytes = [
         0x80, 0x5C, 0x86, 0x02, 0x00, 0x00, 0x2E, 0x29, 0x84, 0x00, 0x00, 0x00, 0x56, 0xF6, 0x42,
         0xC8, 0x40, 0x42, 0x0F, 0x00, 0x96, 0x00, 0x04, 0x00, 0x55, 0x05, 0x00, 0x00, 0x23, 0x0F,
         0x37, 0x31, 0x03, 0x03, 0x08, 0x00, 0x00, 0x00, 0xFC, 0x00, 0x06, 0xFC, 0x00, 0x00, 0x00,
@@ -254,13 +250,18 @@ mod test {
 
     #[test]
     fn should_get_encrypted() {
-        let ekx = Pk8::new(TEST_PKX).get_encrypted();
+        let ekx = Pk8::new(TEST_PKX).copy_encrypted();
         assert_eq!(ekx, TEST_EKX);
     }
 
     #[test]
-    fn pk8_data_size_should_be_232() {
-        assert_eq!(core::mem::size_of::<Pk8Bytes>(), Pk8::STORED_SIZE);
+    fn stored_size() {
+        assert_eq!(core::mem::size_of::<Pk8StoredBytes>(), Pk8::STORED_SIZE);
+    }
+
+    #[test]
+    fn party_size() {
+        assert_eq!(core::mem::size_of::<Pk8PartyBytes>(), Pk8::PARTY_SIZE);
     }
 
     #[test]

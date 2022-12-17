@@ -1,59 +1,85 @@
-use super::types;
+use super::{poke_crypto, types};
+use alloc::vec::Vec;
 use no_std_io::Reader;
 
 pub trait Pkx: Sized + Default + Reader {
-    type StoredBytes: Reader;
     const STORED_SIZE: usize;
+    const PARTY_SIZE: usize;
     const BLOCK_SIZE: usize;
 
-    fn new(data: Self::StoredBytes) -> Self {
-        if Self::is_encrypted(&data) {
+    fn new<T: Into<Vec<u8>> + AsRef<[u8]>>(data: T) -> Self {
+        if Self::is_encrypted(data.as_ref()) {
             Self::new_ekx(data)
         } else {
             Self::new_pkx(data)
         }
     }
 
-    fn new_ekx(data: Self::StoredBytes) -> Self {
+    fn new_size_check<T: Into<Vec<u8>> + AsRef<[u8]>>(data: T) -> Result<Self, &'static str> {
+        let pkx = Self::new(data);
+
+        if !pkx.is_valid_size() {
+            return Err("Invalid pkx size");
+        }
+
+        Ok(pkx)
+    }
+
+    fn new_ekx<T: Into<Vec<u8>> + AsRef<[u8]>>(data: T) -> Self {
         Self::new_pkx(Self::decrypt(data))
     }
 
     /// Defaults to an empty Pokemon if invalid
-    fn new_or_default(data: Self::StoredBytes) -> Self {
-        let pkm = Self::new(data);
+    fn new_or_default<T: Into<Vec<u8>> + AsRef<[u8]>>(data: T) -> Self {
+        let pkm = Self::new(data.into());
 
-        if pkm.is_valid() {
+        if pkm.is_valid() && pkm.is_valid_size() {
             pkm
         } else {
             Self::default()
         }
     }
 
-    fn decrypt_if_needed(data: Self::StoredBytes) -> Self::StoredBytes {
-        if Self::is_encrypted(&data) {
+    fn decrypt_if_needed<T: Into<Vec<u8>> + AsRef<[u8]>>(data: T) -> Vec<u8> {
+        if Self::is_encrypted(&data.as_ref()) {
             Self::decrypt(data)
         } else {
-            data
+            data.into()
         }
     }
 
-    fn encrypt_if_needed(data: Self::StoredBytes) -> Self::StoredBytes {
-        if Self::is_encrypted(&data) {
-            data
+    fn encrypt_if_needed<T: Into<Vec<u8>> + AsRef<[u8]>>(data: T) -> Vec<u8> {
+        if Self::is_encrypted(&data.as_ref()) {
+            data.into()
         } else {
             Self::encrypt(data)
         }
     }
 
-    fn new_pkx(data: Self::StoredBytes) -> Self;
+    fn decrypt<T: Into<Vec<u8>> + AsRef<[u8]>>(data: T) -> Vec<u8> {
+        poke_crypto::decrypt(data.into(), Self::BLOCK_SIZE)
+    }
 
-    fn is_encrypted(data: &Self::StoredBytes) -> bool;
+    fn encrypt<T: Into<Vec<u8>> + AsRef<[u8]>>(data: T) -> Vec<u8> {
+        poke_crypto::encrypt(data.into(), Self::BLOCK_SIZE)
+    }
 
-    fn decrypt(data: Self::StoredBytes) -> Self::StoredBytes;
+    fn copy_encrypted(&self) -> Vec<u8> {
+        Self::encrypt(self.get_slice()).to_vec()
+    }
 
-    fn encrypt(data: Self::StoredBytes) -> Self::StoredBytes;
+    fn copy_decrypted(&self) -> Vec<u8> {
+        self.get_slice().to_vec()
+    }
 
-    fn get_encrypted(&self) -> Self::StoredBytes;
+    fn is_valid_size(&self) -> bool {
+        let len = self.get_slice().len();
+        len == Self::STORED_SIZE || len == Self::PARTY_SIZE
+    }
+
+    fn new_pkx<T: Into<Vec<u8>> + AsRef<[u8]>>(data: T) -> Self;
+
+    fn is_encrypted(data: &[u8]) -> bool;
 
     fn encryption_constant(&self) -> u32;
 

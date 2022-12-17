@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use core::convert::TryInto;
 use no_std_io::Reader;
 
@@ -48,7 +49,7 @@ const BLOCK_POSITION_INVERT: [usize; 32] =
     0, 1, 2, 4, 3, 5, 6, 7, // duplicates of 0-7 to eliminate modulus
 ];
 
-fn crypt_pkm<const PKX_SIZE: usize>(mut data: [u8; PKX_SIZE], mut seed: u32) -> [u8; PKX_SIZE] {
+fn crypt_pkm(mut data: Vec<u8>, mut seed: u32) -> Vec<u8> {
     data.chunks_mut(2).skip(4).for_each(|bytes| {
         seed = 0x41c64e6du32.wrapping_mul(seed).wrapping_add(0x6073);
         bytes[0] ^= (seed >> 16) as u8;
@@ -58,13 +59,8 @@ fn crypt_pkm<const PKX_SIZE: usize>(mut data: [u8; PKX_SIZE], mut seed: u32) -> 
     data
 }
 
-fn shuffle_array<const PKX_SIZE: usize>(
-    data: [u8; PKX_SIZE],
-    sv: usize,
-    block_size: usize,
-) -> [u8; PKX_SIZE] {
-    let mut result: [u8; PKX_SIZE] = [0; PKX_SIZE];
-    result.copy_from_slice(&data);
+fn shuffle_array(data: &[u8], sv: usize, block_size: usize) -> Vec<u8> {
+    let mut result = data.clone().to_vec();
 
     for block in 0..4 {
         let offset = BLOCK_POSITION[(sv * 4) + block];
@@ -81,21 +77,17 @@ fn shuffle_array<const PKX_SIZE: usize>(
     result
 }
 
-pub(super) fn decrypt<const PKX_SIZE: usize, const BLOCK_SIZE: usize>(
-    ekx: [u8; PKX_SIZE],
-) -> [u8; PKX_SIZE] {
+pub(super) fn decrypt(ekx: Vec<u8>, block_size: usize) -> Vec<u8> {
     let seed = ekx.default_read_le(0);
     let sv = ((seed as usize) >> 13) & 31;
     let pkx = crypt_pkm(ekx, seed);
-    shuffle_array(pkx, sv, BLOCK_SIZE)
+    shuffle_array(&pkx, sv, block_size)
 }
 
-pub(super) fn encrypt<const PKX_SIZE: usize, const BLOCK_SIZE: usize>(
-    pkx: [u8; PKX_SIZE],
-) -> [u8; PKX_SIZE] {
+pub(super) fn encrypt(pkx: Vec<u8>, block_size: usize) -> Vec<u8> {
     let seed = pkx.default_read_le(0);
     let sv = ((seed as usize) >> 13) & 31;
-    let shuffled = shuffle_array(pkx, BLOCK_POSITION_INVERT[sv], BLOCK_SIZE);
+    let shuffled = shuffle_array(&pkx, BLOCK_POSITION_INVERT[sv], block_size);
     crypt_pkm(shuffled, seed)
 }
 
