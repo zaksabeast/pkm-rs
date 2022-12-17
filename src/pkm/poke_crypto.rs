@@ -1,4 +1,5 @@
 use core::convert::TryInto;
+use no_std_io::Reader;
 
 // Thanks to PKHeX - https://github.com/kwsch/PKHeX/blob/4bb54334899cb2358b66bf97ba8d7f59c22430d7/PKHeX.Core/PKM/Util/PokeCrypto.cs
 
@@ -40,6 +41,13 @@ const BLOCK_POSITION: [usize; 128] = [
     1, 0, 3, 2,
 ];
 
+#[rustfmt::skip]
+const BLOCK_POSITION_INVERT: [usize; 32] =
+[
+    0, 1, 2, 4, 3, 5, 6, 7, 12, 18, 13, 19, 8, 10, 14, 20, 16, 22, 9, 11, 15, 21, 17, 23,
+    0, 1, 2, 4, 3, 5, 6, 7, // duplicates of 0-7 to eliminate modulus
+];
+
 fn crypt_pkm<const PKX_SIZE: usize>(mut data: [u8; PKX_SIZE], mut seed: u32) -> [u8; PKX_SIZE] {
     data.chunks_mut(2).skip(4).for_each(|bytes| {
         seed = 0x41c64e6du32.wrapping_mul(seed).wrapping_add(0x6073);
@@ -52,11 +60,9 @@ fn crypt_pkm<const PKX_SIZE: usize>(mut data: [u8; PKX_SIZE], mut seed: u32) -> 
 
 fn shuffle_array<const PKX_SIZE: usize>(
     data: [u8; PKX_SIZE],
-    seed: u32,
+    sv: usize,
     block_size: usize,
 ) -> [u8; PKX_SIZE] {
-    let sv = ((seed >> 13) & 31) as usize;
-
     let mut result: [u8; PKX_SIZE] = [0; PKX_SIZE];
     result.copy_from_slice(&data);
 
@@ -77,10 +83,20 @@ fn shuffle_array<const PKX_SIZE: usize>(
 
 pub(super) fn decrypt<const PKX_SIZE: usize, const BLOCK_SIZE: usize>(
     ekx: [u8; PKX_SIZE],
-    seed: u32,
 ) -> [u8; PKX_SIZE] {
+    let seed = ekx.default_read_le(0);
+    let sv = ((seed as usize) >> 13) & 31;
     let pkx = crypt_pkm(ekx, seed);
-    shuffle_array(pkx, seed, BLOCK_SIZE)
+    shuffle_array(pkx, sv, BLOCK_SIZE)
+}
+
+pub(super) fn encrypt<const PKX_SIZE: usize, const BLOCK_SIZE: usize>(
+    pkx: [u8; PKX_SIZE],
+) -> [u8; PKX_SIZE] {
+    let seed = pkx.default_read_le(0);
+    let sv = ((seed as usize) >> 13) & 31;
+    let shuffled = shuffle_array(pkx, BLOCK_POSITION_INVERT[sv], BLOCK_SIZE);
+    crypt_pkm(shuffled, seed)
 }
 
 pub fn calculate_checksum(pkx: &[u8]) -> u16 {

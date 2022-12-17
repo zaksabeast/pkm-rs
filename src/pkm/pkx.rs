@@ -1,11 +1,22 @@
 use super::types;
+use no_std_io::Reader;
 
-pub trait Pkx: Sized + Default {
-    type StoredBytes;
+pub trait Pkx: Sized + Default + Reader {
+    type StoredBytes: Reader;
     const STORED_SIZE: usize;
     const BLOCK_SIZE: usize;
 
-    fn new(data: Self::StoredBytes) -> Self;
+    fn new(data: Self::StoredBytes) -> Self {
+        if Self::is_encrypted(&data) {
+            Self::new_ekx(data)
+        } else {
+            Self::new_pkx(data)
+        }
+    }
+
+    fn new_ekx(data: Self::StoredBytes) -> Self {
+        Self::new_pkx(Self::decrypt(data))
+    }
 
     /// Defaults to an empty Pokemon if invalid
     fn new_or_default(data: Self::StoredBytes) -> Self {
@@ -17,6 +28,32 @@ pub trait Pkx: Sized + Default {
             Self::default()
         }
     }
+
+    fn decrypt_if_needed(data: Self::StoredBytes) -> Self::StoredBytes {
+        if Self::is_encrypted(&data) {
+            Self::decrypt(data)
+        } else {
+            data
+        }
+    }
+
+    fn encrypt_if_needed(data: Self::StoredBytes) -> Self::StoredBytes {
+        if Self::is_encrypted(&data) {
+            data
+        } else {
+            Self::encrypt(data)
+        }
+    }
+
+    fn new_pkx(data: Self::StoredBytes) -> Self;
+
+    fn is_encrypted(data: &Self::StoredBytes) -> bool;
+
+    fn decrypt(data: Self::StoredBytes) -> Self::StoredBytes;
+
+    fn encrypt(data: Self::StoredBytes) -> Self::StoredBytes;
+
+    fn get_encrypted(&self) -> Self::StoredBytes;
 
     fn encryption_constant(&self) -> u32;
 
