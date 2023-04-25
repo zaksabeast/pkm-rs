@@ -317,7 +317,7 @@ mod test {
     #[test]
     fn should_read_hidden_power() {
         let pkx = Pk7::new(TEST_EKX);
-        assert_eq!(pkx.hidden_power(), types::HiddenPower::Ground)
+        assert_eq!(pkx.hidden_power(), types::HiddenPower::Steel)
     }
 
     #[test]
