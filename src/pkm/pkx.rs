@@ -41,7 +41,7 @@ pub trait Pkx: Sized + Default + Reader {
     }
 
     fn decrypt_if_needed<T: Into<Vec<u8>> + AsRef<[u8]>>(data: T) -> Vec<u8> {
-        if Self::is_encrypted(&data.as_ref()) {
+        if Self::is_encrypted(data.as_ref()) {
             Self::decrypt(data)
         } else {
             data.into()
@@ -49,7 +49,7 @@ pub trait Pkx: Sized + Default + Reader {
     }
 
     fn encrypt_if_needed<T: Into<Vec<u8>> + AsRef<[u8]>>(data: T) -> Vec<u8> {
-        if Self::is_encrypted(&data.as_ref()) {
+        if Self::is_encrypted(data.as_ref()) {
             data.into()
         } else {
             Self::encrypt(data)
@@ -174,7 +174,7 @@ pub trait Pkx: Sized + Default + Reader {
             + ((ivs.spe & 1) << 3)
             + ((ivs.spa & 1) << 4)
             + ((ivs.spd & 1) << 5)) as u16
-            * 15) as u16
+            * 15)
             / 63) as u8
     }
 

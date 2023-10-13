@@ -60,7 +60,7 @@ fn crypt_pkm(mut data: Vec<u8>, mut seed: u32) -> Vec<u8> {
 }
 
 fn shuffle_array(data: &[u8], sv: usize, block_size: usize) -> Vec<u8> {
-    let mut result = data.clone().to_vec();
+    let mut result = data.to_vec();
 
     for block in 0..4 {
         let offset = BLOCK_POSITION[(sv * 4) + block];
