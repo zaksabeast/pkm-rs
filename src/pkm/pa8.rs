@@ -491,7 +491,8 @@ mod test {
             0xf8, 0xe8, 0xa0, 0xa5, 0x36, 0x82, 0x37, 0x55, 0xfa, 0x98,
         ];
         let pkx = Pa8::new(shiny_ekx);
-        assert_eq!(pkx.is_shiny(), true)
+        assert_eq!(pkx.is_shiny(), true);
+        assert_eq!(pkx.shiny_type(), Some(types::Shiny::Square));
     }
 
     #[test]

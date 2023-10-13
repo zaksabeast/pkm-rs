@@ -28,3 +28,6 @@ pub use gender::*;
 
 mod gender_ratio;
 pub use gender_ratio::*;
+
+mod shiny;
+pub use shiny::*;

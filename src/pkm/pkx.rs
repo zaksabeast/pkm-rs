@@ -139,6 +139,21 @@ pub trait Pkx: Sized + Default + Reader {
         self.is_valid() && self.psv() == self.tsv()
     }
 
+    fn shiny_type(&self) -> Option<types::Shiny> {
+        if !self.is_valid() {
+            return None;
+        }
+
+        let pid = self.pid();
+        let shiny_value = self.tid() ^ self.sid() ^ (pid as u16) ^ (pid >> 16) as u16;
+
+        match shiny_value {
+            0 => Some(types::Shiny::Square),
+            num if num < 16 => Some(types::Shiny::Star),
+            _ => None,
+        }
+    }
+
     fn ivs(&self) -> types::Stats {
         let iv32 = self.iv32();
         types::Stats {
