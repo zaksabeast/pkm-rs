@@ -171,9 +171,9 @@ pub trait Pkx: Sized + Default + Reader {
         ((((ivs.hp & 1)
             + ((ivs.atk & 1) << 1)
             + ((ivs.def & 1) << 2)
-            + ((ivs.spe & 1) << 4)
-            + ((ivs.spa & 1) << 5)
-            + ((ivs.spd & 1) << 3)) as u16
+            + ((ivs.spe & 1) << 3)
+            + ((ivs.spa & 1) << 4)
+            + ((ivs.spd & 1) << 5)) as u16
             * 15)
             / 63) as u8
     }

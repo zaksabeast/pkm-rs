@@ -333,7 +333,7 @@ mod test {
     #[test]
     fn should_read_hidden_power() {
         let pkx = Pa8::new(TEST_EKX);
-        assert_eq!(pkx.hidden_power(), types::HiddenPower::Bug)
+        assert_eq!(pkx.hidden_power(), types::HiddenPower::Ground)
     }
 
     #[test]
