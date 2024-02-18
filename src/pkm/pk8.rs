@@ -1,22 +1,43 @@
+use super::reader::Reader;
 use super::{pkx::Pkx, poke_crypto, types};
-use alloc::{vec, vec::Vec};
-use no_std_io::{EndianRead, Reader};
 
 pub struct Pk8 {
-    data: Vec<u8>,
+    data: [u8; Self::STORED_SIZE],
 }
 
 impl Default for Pk8 {
     fn default() -> Self {
         Self {
-            data: vec![0; Pk8::STORED_SIZE],
+            data: [0; Self::STORED_SIZE],
         }
     }
 }
 
 impl Reader for Pk8 {
-    fn get_slice(&self) -> &[u8] {
+    fn as_slice(&self) -> &[u8] {
         &self.data
+    }
+}
+
+impl Pk8 {
+    pub fn new(data: [u8; Self::STORED_SIZE]) -> Self {
+        let data = match Self::is_encrypted(&data) {
+            true => poke_crypto::decrypt::<{ Self::STORED_SIZE }, { Self::BLOCK_SIZE }>(&data),
+            false => data,
+        };
+        Self { data }
+    }
+
+    pub fn encrypt(&self) -> [u8; Self::STORED_SIZE] {
+        poke_crypto::encrypt::<{ Self::STORED_SIZE }, { Self::BLOCK_SIZE }>(&self.data)
+    }
+
+    pub fn decrypt(&self) -> [u8; Self::STORED_SIZE] {
+        self.data.clone()
+    }
+
+    pub fn minted_nature(&self) -> types::Nature {
+        self.read::<u8>(0x21).into()
     }
 }
 
@@ -25,108 +46,100 @@ impl Pkx for Pk8 {
     const PARTY_SIZE: usize = 0x158;
     const BLOCK_SIZE: usize = 0x50;
 
-    fn new_pkx<T: Into<Vec<u8>> + AsRef<[u8]>>(data: T) -> Self {
-        Self { data: data.into() }
-    }
-
     fn is_encrypted(data: &[u8]) -> bool {
-        data.default_read_le::<u16>(0x70) != 0 || data.default_read_le::<u16>(0x110) != 0
+        data.read::<u16>(0x70) != 0 || data.read::<u16>(0x110) != 0
     }
 
     fn encryption_constant(&self) -> u32 {
-        self.default_read_le(0x00)
+        self.read(0x00)
     }
 
     fn sanity(&self) -> u16 {
-        self.default_read_le(0x04)
+        self.read(0x04)
     }
 
     fn checksum(&self) -> u16 {
-        self.default_read_le(0x06)
+        self.read(0x06)
     }
 
     fn species(&self) -> types::Species {
-        self.default_read_le::<u16>(0x08).into()
+        self.read::<u16>(0x08).into()
     }
 
     fn tid(&self) -> u16 {
-        self.default_read_le(0x0C)
+        self.read(0x0C)
     }
 
     fn sid(&self) -> u16 {
-        self.default_read_le(0x0E)
+        self.read(0x0E)
     }
 
     fn ability(&self) -> types::Ability {
-        self.default_read::<u16>(0x14).into()
+        self.read::<u16>(0x14).into()
     }
 
     fn ability_number(&self) -> types::AbilityNumber {
-        self.default_read::<u8>(0x16).into()
+        self.read::<u8>(0x16).into()
     }
 
     fn pid(&self) -> u32 {
-        self.default_read_le(0x1C)
+        self.read(0x1C)
     }
 
     fn nature(&self) -> types::Nature {
-        self.default_read::<u8>(0x20).into()
-    }
-
-    fn minted_nature(&self) -> types::Nature {
-        self.default_read::<u8>(0x21).into()
+        self.read::<u8>(0x20).into()
     }
 
     fn gender(&self) -> types::Gender {
-        let byte = self.default_read::<u8>(0x22);
+        let byte = self.read::<u8>(0x22);
         ((byte >> 2) & 3).into()
     }
 
     fn evs(&self) -> types::Stats {
         types::Stats {
-            hp: self.default_read(0x26),
-            atk: self.default_read(0x27),
-            def: self.default_read(0x28),
-            spe: self.default_read(0x29),
-            spa: self.default_read(0x2A),
-            spd: self.default_read(0x2B),
+            hp: self.read(0x26),
+            atk: self.read(0x27),
+            def: self.read(0x28),
+            spe: self.read(0x29),
+            spa: self.read(0x2A),
+            spd: self.read(0x2B),
         }
     }
 
     fn move1(&self) -> types::Move {
-        self.default_read::<u16>(0x72).into()
+        self.read::<u16>(0x72).into()
     }
 
     fn move2(&self) -> types::Move {
-        self.default_read::<u16>(0x74).into()
+        self.read::<u16>(0x74).into()
     }
 
     fn move3(&self) -> types::Move {
-        self.default_read::<u16>(0x76).into()
+        self.read::<u16>(0x76).into()
     }
 
     fn move4(&self) -> types::Move {
-        self.default_read::<u16>(0x78).into()
+        self.read::<u16>(0x78).into()
     }
 
     fn iv32(&self) -> u32 {
-        self.default_read_le(0x8C)
+        self.read(0x8C)
     }
 
     fn current_handler(&self) -> u8 {
-        self.default_read(0xC4)
+        self.read(0xC4)
     }
 
     fn ht_friendship(&self) -> u8 {
-        self.default_read(0xC8)
+        self.read(0xC8)
     }
 
     fn language(&self) -> types::Language {
-        self.default_read::<u8>(0xE2).into()
+        self.read::<u8>(0xE2).into()
     }
 
     fn ot_friendship(&self) -> u8 {
-        self.default_read(0x112)
+        self.read(0x112)
     }
 
     fn calculate_checksum(&self) -> u16 {
@@ -134,45 +147,11 @@ impl Pkx for Pk8 {
     }
 }
 
-pub type Pk8PartyBytes = [u8; Pk8::PARTY_SIZE];
-
-impl From<Pk8PartyBytes> for Pk8 {
-    fn from(data: Pk8PartyBytes) -> Self {
-        Self::new_or_default(data)
-    }
-}
-
-pub type Pk8StoredBytes = [u8; Pk8::STORED_SIZE];
-
-impl From<Pk8StoredBytes> for Pk8 {
-    fn from(data: Pk8StoredBytes) -> Self {
-        Self::new_or_default(data)
-    }
-}
-
-#[derive(EndianRead)]
-pub struct Ek8 {
-    data: Pk8StoredBytes,
-}
-
-impl Default for Ek8 {
-    fn default() -> Self {
-        Self {
-            data: [0; Pk8::STORED_SIZE],
-        }
-    }
-}
-
-impl From<Ek8> for Pk8 {
-    fn from(ekx: Ek8) -> Self {
-        ekx.data.into()
-    }
-}
 #[cfg(test)]
 mod test {
     use super::*;
 
-    const TEST_EKX: Pk8StoredBytes = [
+    const TEST_EKX: [u8; Pk8::STORED_SIZE] = [
         0x80, 0x5C, 0x86, 0x02, 0x00, 0x00, 0x2E, 0x29, 0x20, 0x0E, 0x56, 0x4F, 0xAA, 0xF1, 0xF4,
         0x2F, 0xA5, 0x9E, 0xCC, 0xFE, 0x8B, 0xF2, 0x32, 0x20, 0x51, 0xD1, 0x99, 0xDD, 0x42, 0xD2,
         0x55, 0xE5, 0x05, 0x1F, 0x85, 0x2E, 0x6A, 0xED, 0x2A, 0x14, 0x5A, 0x21, 0x96, 0xDB, 0x76,
@@ -197,7 +176,7 @@ mod test {
         0x47, 0xDC, 0x62, 0xB7, 0x11, 0xBF, 0x12, 0x3F, 0xE2, 0x4F, 0x7B, 0xDF, 0xBC,
     ];
 
-    const TEST_PKX: Pk8StoredBytes = [
+    const TEST_PKX: [u8; Pk8::STORED_SIZE] = [
         0x80, 0x5C, 0x86, 0x02, 0x00, 0x00, 0x2E, 0x29, 0x84, 0x00, 0x00, 0x00, 0x56, 0xF6, 0x42,
         0xC8, 0x40, 0x42, 0x0F, 0x00, 0x96, 0x00, 0x04, 0x00, 0x55, 0x05, 0x00, 0x00, 0x23, 0x0F,
         0x37, 0x31, 0x03, 0x03, 0x08, 0x00, 0x00, 0x00, 0xFC, 0x00, 0x06, 0xFC, 0x00, 0x00, 0x00,
@@ -238,30 +217,14 @@ mod test {
 
     #[test]
     fn should_decrypt() {
-        let pkx = Pk8::decrypt(TEST_EKX);
+        let pkx = Pk8::new(TEST_EKX).decrypt();
         assert_eq!(pkx, TEST_PKX);
     }
 
     #[test]
     fn should_encrypt() {
-        let ekx = Pk8::encrypt(TEST_PKX);
+        let ekx = Pk8::new(TEST_PKX).encrypt();
         assert_eq!(ekx, TEST_EKX);
-    }
-
-    #[test]
-    fn should_get_encrypted() {
-        let ekx = Pk8::new(TEST_PKX).copy_encrypted();
-        assert_eq!(ekx, TEST_EKX);
-    }
-
-    #[test]
-    fn stored_size() {
-        assert_eq!(core::mem::size_of::<Pk8StoredBytes>(), Pk8::STORED_SIZE);
-    }
-
-    #[test]
-    fn party_size() {
-        assert_eq!(core::mem::size_of::<Pk8PartyBytes>(), Pk8::PARTY_SIZE);
     }
 
     #[test]

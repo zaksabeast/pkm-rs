@@ -1,22 +1,39 @@
+use super::reader::Reader;
 use super::{pkx::Pkx, poke_crypto, types};
-use alloc::{vec, vec::Vec};
-use no_std_io::{EndianRead, Reader};
 
 pub struct Pk6 {
-    data: Vec<u8>,
+    data: [u8; Self::STORED_SIZE],
 }
 
 impl Default for Pk6 {
     fn default() -> Self {
         Self {
-            data: vec![0; Pk6::STORED_SIZE],
+            data: [0; Self::STORED_SIZE],
         }
     }
 }
 
 impl Reader for Pk6 {
-    fn get_slice(&self) -> &[u8] {
+    fn as_slice(&self) -> &[u8] {
         &self.data
+    }
+}
+
+impl Pk6 {
+    pub fn new(data: [u8; Self::STORED_SIZE]) -> Self {
+        let data = match Self::is_encrypted(&data) {
+            true => poke_crypto::decrypt::<{ Self::STORED_SIZE }, { Self::BLOCK_SIZE }>(&data),
+            false => data,
+        };
+        Self { data }
+    }
+
+    pub fn encrypt(&self) -> [u8; Self::STORED_SIZE] {
+        poke_crypto::encrypt::<{ Self::STORED_SIZE }, { Self::BLOCK_SIZE }>(&self.data)
+    }
+
+    pub fn decrypt(&self) -> [u8; Self::STORED_SIZE] {
+        self.data.clone()
     }
 }
 
@@ -25,105 +42,101 @@ impl Pkx for Pk6 {
     const PARTY_SIZE: usize = 0x104;
     const BLOCK_SIZE: usize = 0x38;
 
-    fn new_pkx<T: Into<Vec<u8>> + AsRef<[u8]>>(data: T) -> Self {
-        Self { data: data.into() }
-    }
-
     fn is_encrypted(data: &[u8]) -> bool {
-        data.default_read_le::<u16>(0xc8) != 0 || data.default_read_le::<u16>(0x58) != 0
+        data.read::<u16>(0xc8) != 0 || data.read::<u16>(0x58) != 0
     }
 
     fn encryption_constant(&self) -> u32 {
-        self.default_read_le(0x00)
+        self.read(0x00)
     }
 
     fn sanity(&self) -> u16 {
-        self.default_read_le(0x04)
+        self.read(0x04)
     }
 
     fn checksum(&self) -> u16 {
-        self.default_read_le(0x06)
+        self.read(0x06)
     }
 
     fn species(&self) -> types::Species {
-        self.default_read_le::<u16>(0x08).into()
+        self.read::<u16>(0x08).into()
     }
 
     fn tid(&self) -> u16 {
-        self.default_read_le(0x0C)
+        self.read(0x0C)
     }
 
     fn sid(&self) -> u16 {
-        self.default_read_le(0x0E)
+        self.read(0x0E)
     }
 
     fn ability(&self) -> types::Ability {
-        let ability: u8 = self.default_read(0x14);
+        let ability: u8 = self.read(0x14);
         (ability as u16).into()
     }
 
     fn ability_number(&self) -> types::AbilityNumber {
-        self.default_read::<u8>(0x15).into()
+        self.read::<u8>(0x15).into()
     }
 
     fn pid(&self) -> u32 {
-        self.default_read_le(0x18)
+        self.read(0x18)
     }
 
     fn nature(&self) -> types::Nature {
-        self.default_read::<u8>(0x1C).into()
+        self.read::<u8>(0x1C).into()
     }
 
     fn gender(&self) -> types::Gender {
-        let byte = self.default_read::<u8>(0x1D);
+        let byte = self.read::<u8>(0x1D);
         ((byte >> 1) & 3).into()
     }
 
     fn evs(&self) -> types::Stats {
         types::Stats {
-            hp: self.default_read(0x1E),
-            atk: self.default_read(0x1F),
-            def: self.default_read(0x20),
-            spe: self.default_read(0x21),
-            spa: self.default_read(0x22),
-            spd: self.default_read(0x23),
+            hp: self.read(0x1E),
+            atk: self.read(0x1F),
+            def: self.read(0x20),
+            spe: self.read(0x21),
+            spa: self.read(0x22),
+            spd: self.read(0x23),
         }
     }
 
     fn move1(&self) -> types::Move {
-        self.default_read::<u16>(0x5A).into()
+        self.read::<u16>(0x5A).into()
     }
 
     fn move2(&self) -> types::Move {
-        self.default_read::<u16>(0x5C).into()
+        self.read::<u16>(0x5C).into()
     }
 
     fn move3(&self) -> types::Move {
-        self.default_read::<u16>(0x5E).into()
+        self.read::<u16>(0x5E).into()
     }
 
     fn move4(&self) -> types::Move {
-        self.default_read::<u16>(0x60).into()
+        self.read::<u16>(0x60).into()
     }
 
     fn iv32(&self) -> u32 {
-        self.default_read_le(0x74)
+        self.read(0x74)
     }
 
     fn current_handler(&self) -> u8 {
-        self.default_read(0x93)
+        self.read(0x93)
     }
 
     fn ht_friendship(&self) -> u8 {
-        self.default_read(0xA2)
+        self.read(0xA2)
     }
 
     fn ot_friendship(&self) -> u8 {
-        self.default_read(0xCA)
+        self.read(0xCA)
     }
 
     fn language(&self) -> types::Language {
-        self.default_read::<u8>(0xE3).into()
+        self.read::<u8>(0xE3).into()
     }
 
     fn calculate_checksum(&self) -> u16 {
@@ -131,46 +144,11 @@ impl Pkx for Pk6 {
     }
 }
 
-pub type Pk6PartyBytes = [u8; Pk6::PARTY_SIZE];
-
-impl From<Pk6PartyBytes> for Pk6 {
-    fn from(data: Pk6PartyBytes) -> Self {
-        Self::new_or_default(data)
-    }
-}
-
-pub type Pk6StoredBytes = [u8; Pk6::STORED_SIZE];
-
-impl From<Pk6StoredBytes> for Pk6 {
-    fn from(data: Pk6StoredBytes) -> Self {
-        Self::new_or_default(data)
-    }
-}
-
-#[derive(EndianRead)]
-pub struct Ek6 {
-    data: Pk6StoredBytes,
-}
-
-impl Default for Ek6 {
-    fn default() -> Self {
-        Self {
-            data: [0; Pk6::STORED_SIZE],
-        }
-    }
-}
-
-impl From<Ek6> for Pk6 {
-    fn from(ekx: Ek6) -> Self {
-        ekx.data.into()
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
 
-    const TEST_EKX: Pk6StoredBytes = [
+    const TEST_EKX: [u8; Pk6::STORED_SIZE] = [
         0x80, 0x5c, 0x86, 0x02, 0x00, 0x00, 0xd6, 0x41, 0x20, 0x0e, 0x56, 0x4f, 0xaa, 0xf1, 0xf4,
         0x2f, 0xa5, 0x9e, 0xcc, 0xfe, 0x8b, 0xf2, 0x32, 0x20, 0x51, 0xd1, 0x99, 0xdd, 0x42, 0xd2,
         0x55, 0xe5, 0x05, 0x1f, 0x85, 0x2a, 0x62, 0xe2, 0x2a, 0x14, 0x5a, 0x21, 0x96, 0xdb, 0x76,
@@ -189,7 +167,7 @@ mod test {
         0xca, 0x14, 0xb7, 0xdf, 0xf2, 0xb3, 0x26,
     ];
 
-    const TEST_PKX: Pk6StoredBytes = [
+    const TEST_PKX: [u8; Pk6::STORED_SIZE] = [
         0x80, 0x5c, 0x86, 0x02, 0x00, 0x00, 0xd6, 0x41, 0x84, 0x00, 0x18, 0x01, 0x56, 0xf6, 0x42,
         0xc8, 0x40, 0x42, 0x0f, 0x00, 0x96, 0x04, 0x00, 0x00, 0x23, 0x0f, 0x37, 0x31, 0x03, 0x04,
         0xfc, 0x00, 0x06, 0xfc, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3f, 0x31, 0x00,
@@ -224,30 +202,14 @@ mod test {
 
     #[test]
     fn should_decrypt() {
-        let pkx = Pk6::decrypt(TEST_EKX);
+        let pkx = Pk6::new(TEST_EKX).decrypt();
         assert_eq!(pkx, TEST_PKX);
     }
 
     #[test]
     fn should_encrypt() {
-        let ekx = Pk6::encrypt(TEST_PKX);
+        let ekx = Pk6::new(TEST_PKX).encrypt();
         assert_eq!(ekx, TEST_EKX);
-    }
-
-    #[test]
-    fn should_get_encrypted() {
-        let ekx = Pk6::new(TEST_PKX).copy_encrypted();
-        assert_eq!(ekx, TEST_EKX);
-    }
-
-    #[test]
-    fn stored_size() {
-        assert_eq!(core::mem::size_of::<Pk6StoredBytes>(), Pk6::STORED_SIZE);
-    }
-
-    #[test]
-    fn party_size() {
-        assert_eq!(core::mem::size_of::<Pk6PartyBytes>(), Pk6::PARTY_SIZE);
     }
 
     #[test]
@@ -294,12 +256,6 @@ mod test {
     fn should_read_nature() {
         let pkx = Pk6::new(TEST_EKX);
         assert_eq!(pkx.nature(), types::Nature::Adamant)
-    }
-
-    #[test]
-    fn should_read_minted_nature() {
-        let pkx = Pk6::new(TEST_EKX);
-        assert_eq!(pkx.minted_nature(), types::Nature::Adamant)
     }
 
     #[test]

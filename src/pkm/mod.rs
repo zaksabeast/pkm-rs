@@ -1,4 +1,5 @@
 mod poke_crypto;
+mod reader;
 
 mod pk6;
 pub use pk6::*;
