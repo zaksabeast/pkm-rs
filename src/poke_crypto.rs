@@ -1,4 +1,4 @@
-use crate::pkm::reader::Reader;
+use crate::reader::Reader;
 use core::convert::TryInto;
 
 // Thanks to PKHeX - https://github.com/kwsch/PKHeX/blob/4bb54334899cb2358b66bf97ba8d7f59c22430d7/PKHeX.Core/PKM/Util/PokeCrypto.cs
