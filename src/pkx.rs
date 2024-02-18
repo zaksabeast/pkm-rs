@@ -5,13 +5,11 @@ pub trait Pkx: Sized {
     const PARTY_SIZE: usize;
     const BLOCK_SIZE: usize;
 
-    fn is_encrypted(data: &[u8]) -> bool;
-
     fn encryption_constant(&self) -> u32;
 
     fn sanity(&self) -> u16;
 
-    fn checksum(&self) -> u16;
+    fn valid_checksum(&self) -> bool;
 
     fn species(&self) -> types::Species;
 
@@ -48,8 +46,6 @@ pub trait Pkx: Sized {
     fn ht_friendship(&self) -> u8;
 
     fn current_handler(&self) -> u8;
-
-    fn calculate_checksum(&self) -> u16;
 
     fn tsv(&self) -> u16 {
         (self.tid() ^ self.sid()) >> 4
@@ -125,8 +121,6 @@ pub trait Pkx: Sized {
     }
 
     fn is_valid(&self) -> bool {
-        self.sanity() == 0
-            && self.checksum() == self.calculate_checksum()
-            && self.species() != types::Species::None
+        self.sanity() == 0 && self.valid_checksum() && self.species() != types::Species::None
     }
 }

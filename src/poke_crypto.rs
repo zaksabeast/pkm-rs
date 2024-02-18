@@ -81,25 +81,21 @@ fn shuffle_array<const STORED_SIZE: usize, const BLOCK_SIZE: usize>(
     result
 }
 
-pub(super) fn decrypt<const STORED_SIZE: usize, const BLOCK_SIZE: usize>(
-    ekx: &[u8],
-) -> [u8; STORED_SIZE] {
+fn decrypt<const STORED_SIZE: usize, const BLOCK_SIZE: usize>(ekx: &[u8]) -> [u8; STORED_SIZE] {
     let seed = ekx.read(0);
     let sv = ((seed as usize) >> 13) & 31;
     let pkx = crypt_pkm::<STORED_SIZE>(ekx, seed);
     shuffle_array::<STORED_SIZE, BLOCK_SIZE>(&pkx, sv)
 }
 
-pub(super) fn encrypt<const STORED_SIZE: usize, const BLOCK_SIZE: usize>(
-    pkx: &[u8],
-) -> [u8; STORED_SIZE] {
+fn encrypt<const STORED_SIZE: usize, const BLOCK_SIZE: usize>(pkx: &[u8]) -> [u8; STORED_SIZE] {
     let seed = pkx.read(0);
     let sv = ((seed as usize) >> 13) & 31;
     let shuffled = shuffle_array::<STORED_SIZE, BLOCK_SIZE>(pkx, BLOCK_POSITION_INVERT[sv]);
     crypt_pkm::<STORED_SIZE>(&shuffled, seed)
 }
 
-pub fn calculate_checksum(pkx: &[u8]) -> u16 {
+fn calculate_checksum(pkx: &[u8]) -> u16 {
     let mut checksum = 0u16;
 
     for chunks in pkx.chunks_exact(2) {
@@ -108,4 +104,37 @@ pub fn calculate_checksum(pkx: &[u8]) -> u16 {
     }
 
     checksum
+}
+
+pub trait PokeCrypto<const STORED_SIZE: usize, const BLOCK_SIZE: usize>: Reader {
+    fn is_encrypted(data: &[u8]) -> bool;
+
+    fn checksum(&self) -> u16;
+
+    fn encrypt_raw(data: &[u8]) -> [u8; STORED_SIZE] {
+        match Self::is_encrypted(data) {
+            true => data.read_array(0),
+            false => encrypt::<{ STORED_SIZE }, { BLOCK_SIZE }>(data),
+        }
+    }
+
+    fn decrypt_raw(data: &[u8]) -> [u8; STORED_SIZE] {
+        match Self::is_encrypted(data) {
+            true => decrypt::<{ STORED_SIZE }, { BLOCK_SIZE }>(data),
+            false => data.read_array(0),
+        }
+    }
+
+    fn encrypt(&self) -> [u8; STORED_SIZE] {
+        Self::encrypt_raw(self.as_slice())
+    }
+
+    fn decrypt(&self) -> [u8; STORED_SIZE] {
+        Self::decrypt_raw(self.as_slice())
+    }
+
+    fn calculate_checksum(&self) -> u16 {
+        let data = self.as_slice();
+        calculate_checksum(&data[8..STORED_SIZE])
+    }
 }

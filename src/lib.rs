@@ -2,8 +2,10 @@
 
 extern crate alloc;
 
-mod poke_crypto;
 mod reader;
+
+mod poke_crypto;
+pub use poke_crypto::*;
 
 mod pk6;
 pub use pk6::*;

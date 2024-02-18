@@ -1,5 +1,7 @@
+use super::pkx::Pkx;
+use super::poke_crypto::PokeCrypto;
 use super::reader::Reader;
-use super::{pkx::Pkx, poke_crypto, types};
+use super::types;
 
 pub struct Pk7 {
     data: [u8; Self::STORED_SIZE],
@@ -19,21 +21,20 @@ impl Reader for Pk7 {
     }
 }
 
+impl PokeCrypto<{ Self::STORED_SIZE }, { Self::BLOCK_SIZE }> for Pk7 {
+    fn is_encrypted(data: &[u8]) -> bool {
+        data.read::<u16>(0xc8) != 0 || data.read::<u16>(0x58) != 0
+    }
+
+    fn checksum(&self) -> u16 {
+        self.read(0x06)
+    }
+}
+
 impl Pk7 {
     pub fn new(data: [u8; Self::STORED_SIZE]) -> Self {
-        let data = match Self::is_encrypted(&data) {
-            true => poke_crypto::decrypt::<{ Self::STORED_SIZE }, { Self::BLOCK_SIZE }>(&data),
-            false => data,
-        };
+        let data = Self::decrypt_raw(&data);
         Self { data }
-    }
-
-    pub fn encrypt(&self) -> [u8; Self::STORED_SIZE] {
-        poke_crypto::encrypt::<{ Self::STORED_SIZE }, { Self::BLOCK_SIZE }>(&self.data)
-    }
-
-    pub fn decrypt(&self) -> [u8; Self::STORED_SIZE] {
-        self.data.clone()
     }
 }
 
@@ -42,20 +43,12 @@ impl Pkx for Pk7 {
     const PARTY_SIZE: usize = 0x104;
     const BLOCK_SIZE: usize = 0x38;
 
-    fn is_encrypted(data: &[u8]) -> bool {
-        data.read::<u16>(0xc8) != 0 || data.read::<u16>(0x58) != 0
-    }
-
     fn encryption_constant(&self) -> u32 {
         self.read(0x00)
     }
 
     fn sanity(&self) -> u16 {
         self.read(0x04)
-    }
-
-    fn checksum(&self) -> u16 {
-        self.read(0x06)
     }
 
     fn species(&self) -> types::Species {
@@ -139,8 +132,8 @@ impl Pkx for Pk7 {
         self.read::<u8>(0xE3).into()
     }
 
-    fn calculate_checksum(&self) -> u16 {
-        poke_crypto::calculate_checksum(&self.data[8..Pk7::STORED_SIZE])
+    fn valid_checksum(&self) -> bool {
+        self.checksum() == self.calculate_checksum()
     }
 }
 
