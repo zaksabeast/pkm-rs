@@ -1,44 +1,42 @@
 use crate::reader::Reader;
-use core::convert::TryInto;
-
-// Thanks to PKHeX - https://github.com/kwsch/PKHeX/blob/4bb54334899cb2358b66bf97ba8d7f59c22430d7/PKHeX.Core/PKM/Util/PokeCrypto.cs
+use core::{convert::TryInto, usize};
 
 #[rustfmt::skip]
-const BLOCK_POSITION: [usize; 128] = [
-    0, 1, 2, 3,
-    0, 1, 3, 2,
-    0, 2, 1, 3,
-    0, 3, 1, 2,
-    0, 2, 3, 1,
-    0, 3, 2, 1,
-    1, 0, 2, 3,
-    1, 0, 3, 2,
-    2, 0, 1, 3,
-    3, 0, 1, 2,
-    2, 0, 3, 1,
-    3, 0, 2, 1,
-    1, 2, 0, 3,
-    1, 3, 0, 2,
-    2, 1, 0, 3,
-    3, 1, 0, 2,
-    2, 3, 0, 1,
-    3, 2, 0, 1,
-    1, 2, 3, 0,
-    1, 3, 2, 0,
-    2, 1, 3, 0,
-    3, 1, 2, 0,
-    2, 3, 1, 0,
-    3, 2, 1, 0,
+const BLOCK_SWAP_DST: [usize; 96] = [
+    0, 1, 2,
+    0, 1, 3,
+    0, 2, 2,
+    0, 3, 3,
+    0, 2, 3,
+    0, 3, 2,
+    1, 1, 2,
+    1, 1, 3,
+    2, 2, 2,
+    3, 3, 3,
+    2, 2, 3,
+    3, 3, 2,
+    1, 2, 2,
+    1, 3, 3,
+    2, 1, 2,
+    3, 1, 3,
+    2, 3, 2,
+    3, 2, 3,
+    1, 2, 3,
+    1, 3, 2,
+    2, 1, 3,
+    3, 1, 2,
+    2, 3, 3,
+    3, 2, 2,
 
     // duplicates of 0-7 to eliminate modulus
-    0, 1, 2, 3,
-    0, 1, 3, 2,
-    0, 2, 1, 3,
-    0, 3, 1, 2,
-    0, 2, 3, 1,
-    0, 3, 2, 1,
-    1, 0, 2, 3,
-    1, 0, 3, 2,
+    0, 1, 2,
+    0, 1, 3,
+    0, 2, 2,
+    0, 3, 3,
+    0, 2, 3,
+    0, 3, 2,
+    1, 1, 2,
+    1, 1, 3,
 ];
 
 #[rustfmt::skip]
@@ -48,51 +46,44 @@ const BLOCK_POSITION_INVERT: [usize; 32] =
     0, 1, 2, 4, 3, 5, 6, 7, // duplicates of 0-7 to eliminate modulus
 ];
 
-fn crypt_pkm<const STORED_SIZE: usize>(data: &[u8], mut seed: u32) -> [u8; STORED_SIZE] {
-    let mut result = [0u8; STORED_SIZE];
-    result.clone_from_slice(data);
-    result.chunks_mut(2).skip(4).for_each(|bytes| {
+fn crypt_pkm(out: &mut [u8], mut seed: u32) {
+    out.chunks_mut(2).skip(4).for_each(|bytes| {
         seed = 0x41c64e6du32.wrapping_mul(seed).wrapping_add(0x6073);
         bytes[0] ^= (seed >> 16) as u8;
         bytes[1] ^= (seed >> 24) as u8;
     });
-    result
 }
 
-fn shuffle_array<const STORED_SIZE: usize, const BLOCK_SIZE: usize>(
-    data: &[u8],
-    sv: usize,
-) -> [u8; STORED_SIZE] {
-    let mut result = [0u8; STORED_SIZE];
-    result[..8].copy_from_slice(&data[..8]);
+fn shuffle_array(data: &mut [u8], sv: usize, block_size: usize) {
+    for block in 0..3 {
+        let src_block = block;
+        let dst_block = BLOCK_SWAP_DST[(sv * 3) + block];
 
-    for block in 0..4 {
-        let offset = BLOCK_POSITION[(sv * 4) + block];
+        if src_block == dst_block {
+            continue;
+        }
 
-        let source_start = 8 + (BLOCK_SIZE * offset);
-        let dest_start = 8 + (BLOCK_SIZE * block);
-
-        let source_block = &data[source_start..source_start + BLOCK_SIZE];
-        let dest_block = &mut result[dest_start..dest_start + BLOCK_SIZE];
-
-        dest_block.copy_from_slice(source_block);
+        for i in 0..block_size {
+            data.swap(
+                8 + (src_block * block_size) + i,
+                8 + (dst_block * block_size) + i,
+            )
+        }
     }
-
-    result
 }
 
-fn decrypt<const STORED_SIZE: usize, const BLOCK_SIZE: usize>(ekx: &[u8]) -> [u8; STORED_SIZE] {
+fn decrypt(ekx: &mut [u8], block_size: usize) {
     let seed = ekx.read(0);
     let sv = ((seed as usize) >> 13) & 31;
-    let pkx = crypt_pkm::<STORED_SIZE>(ekx, seed);
-    shuffle_array::<STORED_SIZE, BLOCK_SIZE>(&pkx, sv)
+    crypt_pkm(ekx, seed);
+    shuffle_array(ekx, sv, block_size);
 }
 
-fn encrypt<const STORED_SIZE: usize, const BLOCK_SIZE: usize>(pkx: &[u8]) -> [u8; STORED_SIZE] {
+fn encrypt(pkx: &mut [u8], block_size: usize) {
     let seed = pkx.read(0);
     let sv = ((seed as usize) >> 13) & 31;
-    let shuffled = shuffle_array::<STORED_SIZE, BLOCK_SIZE>(pkx, BLOCK_POSITION_INVERT[sv]);
-    crypt_pkm::<STORED_SIZE>(&shuffled, seed)
+    shuffle_array(pkx, BLOCK_POSITION_INVERT[sv], block_size);
+    crypt_pkm(pkx, seed);
 }
 
 fn calculate_checksum(pkx: &[u8]) -> u16 {
@@ -106,35 +97,29 @@ fn calculate_checksum(pkx: &[u8]) -> u16 {
     checksum
 }
 
-pub trait PokeCrypto<const STORED_SIZE: usize, const BLOCK_SIZE: usize>: Reader {
+pub trait PokeCrypto: Reader {
+    const PARTY_SIZE: usize;
+    const STORED_SIZE: usize;
+    const BLOCK_SIZE: usize;
+
     fn is_encrypted(data: &[u8]) -> bool;
 
     fn checksum(&self) -> u16;
 
-    fn encrypt_raw(data: &[u8]) -> [u8; STORED_SIZE] {
-        match Self::is_encrypted(data) {
-            true => data.read_array(0),
-            false => encrypt::<{ STORED_SIZE }, { BLOCK_SIZE }>(data),
+    fn encrypt_raw(data: &mut [u8]) {
+        if !Self::is_encrypted(data) {
+            encrypt(data, Self::BLOCK_SIZE)
         }
     }
 
-    fn decrypt_raw(data: &[u8]) -> [u8; STORED_SIZE] {
-        match Self::is_encrypted(data) {
-            true => decrypt::<{ STORED_SIZE }, { BLOCK_SIZE }>(data),
-            false => data.read_array(0),
+    fn decrypt_raw(data: &mut [u8]) {
+        if Self::is_encrypted(data) {
+            decrypt(data, Self::BLOCK_SIZE)
         }
-    }
-
-    fn encrypt(&self) -> [u8; STORED_SIZE] {
-        Self::encrypt_raw(self.as_slice())
-    }
-
-    fn decrypt(&self) -> [u8; STORED_SIZE] {
-        Self::decrypt_raw(self.as_slice())
     }
 
     fn calculate_checksum(&self) -> u16 {
         let data = self.as_slice();
-        calculate_checksum(&data[8..STORED_SIZE])
+        calculate_checksum(&data[8..Self::STORED_SIZE])
     }
 }

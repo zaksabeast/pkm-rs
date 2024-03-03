@@ -31,3 +31,12 @@ where
         self.as_ref()
     }
 }
+
+#[macro_export]
+macro_rules! impl_read_prop {
+    ($name:ident : $type:ty = $address:expr) => {
+        fn $name(&self) -> $type {
+            self.read($address)
+        }
+    };
+}
