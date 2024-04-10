@@ -42,6 +42,15 @@ impl Pk9 {
         Self::decrypt_raw(&mut data);
         Self { data }
     }
+
+    pub fn new_valid(data: [u8; Self::STORED_SIZE]) -> Self {
+        let pkm = Self::new(data);
+        if pkm.is_valid() {
+            return pkm;
+        }
+
+        Self::default()
+    }
 }
 
 impl Pkx for Pk9 {

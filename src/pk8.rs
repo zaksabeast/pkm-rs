@@ -44,6 +44,15 @@ impl Pk8 {
         Self { data }
     }
 
+    pub fn new_valid(data: [u8; Self::STORED_SIZE]) -> Self {
+        let pkm = Self::new(data);
+        if pkm.is_valid() {
+            return pkm;
+        }
+
+        Self::default()
+    }
+
     impl_read_prop!(minted_nature: u8 = 0x21);
 
     pub fn minted_nature_t(&self) -> types::Nature {
