@@ -95,6 +95,11 @@ pub trait Pkx: Sized {
         psv as u16
     }
 
+    fn shiny_xor(&self) -> u16 {
+        let pid = self.pid();
+        self.tid16() ^ self.sid16() ^ (pid >> 16) as u16 ^ (pid & 0xffff) as u16
+    }
+
     fn is_shiny(&self) -> bool {
         self.is_valid() && self.psv() == self.tsv()
     }
@@ -104,9 +109,7 @@ pub trait Pkx: Sized {
             return None;
         }
 
-        let shiny_value = self.tsv() ^ self.psv();
-
-        match shiny_value {
+        match self.shiny_xor() {
             0 => Some(types::Shiny::Square),
             num if num < 16 => Some(types::Shiny::Star),
             _ => None,

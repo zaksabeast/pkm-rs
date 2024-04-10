@@ -282,6 +282,7 @@ mod test {
     impl_test!(calculate_checksum, 0xb764);
     impl_test!(is_valid, true);
     impl_test!(is_shiny, false);
+    impl_test!(shiny_type, None);
     impl_test!(nickname, "Pumpkaboo");
     impl_test!(ot_name, "PKHeX");
     impl_test!(ht_name, "");
